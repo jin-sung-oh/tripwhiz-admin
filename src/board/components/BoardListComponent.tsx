@@ -1,82 +1,52 @@
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Card,
   CardHeader,
   Divider,
-  FormControl,
-  InputLabel,
-  Select, SelectChangeEvent,
-  Table, TableBody, TableCell,
+  Table,
+  TableBody,
+  TableCell,
   TableContainer,
-  TableHead, TableRow, Typography
+  TableHead,
+  TableRow,
+  Typography
 } from '@mui/material';
-import MenuItem from '@mui/material/MenuItem';
-import { ChangeEvent, useEffect, useState } from 'react';
-import { IQuestion, QuestionStatus } from '../../types/question';
-import useQuestion from '../../hooks/useQuestion';
-import { getQuestionList } from '../../api/questionAPI';
-import Label from '../../components/Label';
-import { useNavigate } from 'react-router-dom';
+// @ts-ignore
+import { IBoard, getBoardList } from '../../api/boardAPI'; // 게시글 API 및 타입 임포트
 
-function BoardListComponent(){
-  const { questions, setQuestions } = useQuestion(undefined);
-  const [filterStatus, setFilterStatus] = useState<QuestionStatus | undefined>();
+function BoardListComponent() {
+  const [boardList, setBoardList] = useState<IBoard[]>([]); // 게시글 리스트 상태
+  const [loading, setLoading] = useState<boolean>(true); // 로딩 상태
 
-  const navigate = useNavigate(); // useNavigate 훅 사용_SA
+  // 게시글 리스트를 불러오는 함수
+  const fetchBoardList = async () => {
+    try {
+      const data = await getBoardList();
+      console.log('Fetched board list:', data); // 데이터가 제대로 불러와지는지 확인용
+      setBoardList(data);
+      setLoading(false); // 데이터 로딩 완료 시 로딩 상태 해제
+    } catch (error) {
+      console.error('게시글 리스트 불러오기 오류:', error);
+      setLoading(false);
+    }
+  };
 
+  // 컴포넌트가 마운트될 때 게시글 리스트 불러오기
   useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        const data = await getQuestionList(); // API 호출
-        setQuestions(data); // 상태에 데이터 저장
-      } catch (error) {
-        console.error('Error fetching QnA list:', error);
-      }
-    };
-    fetchQuestions();
-  }, [setQuestions]);
-
-
-
-  // 상태 변경 핸들러
-  const handleStatusChange = (e: SelectChangeEvent<string>) => {
-    const value = e.target.value === 'all' ? undefined : e.target.value as QuestionStatus;
-    setFilterStatus(value); //필터 상태 업데이트
-  };
-
-
-  // 질문 클릭 시 상세 페이지로 이동하는 함수_SA
-  const handleQuestionClick = (bno: number) => {
-    navigate(`/board/read/${bno}`); // 질문 번호에 해당하는 상세 페이지로 이동
-  };
+    fetchBoardList();
+  }, []);
 
   return (
     <Card>
-
-      {/*헤더*/}
+      {/* 헤더 */}
       <CardHeader
+        title="게시글 목록"
         action={
           <Box width={150}>
-            {/* 상태 필터를 위한 드롭다운을 표시합니다. */}
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={filterStatus || 'all'} // 필터링된 상태 값 또는 기본 값 'all'
-                onChange={handleStatusChange}   // 상태 변경 핸들러
-                label="Status"
-                autoWidth
-              >
-                {/* statusOptions 배열을 순회하며, 각 옵션을 드롭다운에 표시합니다. */}
-                {statusOptions.map((statusOption) => (
-                  <MenuItem key={statusOption.id} value={statusOption.id}>
-                    {statusOption.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            {/* 필요에 따라 여기에 추가 작업 버튼 등을 넣을 수 있음 */}
           </Box>
         }
-        title="Recent Questions"
       />
 
       {/* 카드와 테이블의 구분선 */}
@@ -85,60 +55,58 @@ function BoardListComponent(){
       {/* 테이블을 담는 컨테이너 */}
       <TableContainer>
         <Table>
+          {/* 테이블 헤더 */}
           <TableHead style={{ backgroundColor: '#FCFBF0' }}>
-            <TableCell align="center">No.</TableCell>
-            <TableCell align="center">제목</TableCell>
-            <TableCell align="center">상태</TableCell>
-            <TableCell align="center">작성자</TableCell>
-            <TableCell align="center">작성일</TableCell>
-            <TableCell align="center">조회수</TableCell>
+            <TableRow>
+              <TableCell align="center">No.</TableCell>
+              <TableCell align="center">제목</TableCell>
+              <TableCell align="center">작성자</TableCell>
+              <TableCell align="center">작성일</TableCell>
+              <TableCell align="center">조회수</TableCell>
+            </TableRow>
           </TableHead>
 
+          {/* 테이블 바디 */}
           <TableBody>
-                  <TableRow
-                    hover
-                    key={question.qno}
-                    onClick={() => handleQuestionClick(question.qno)} // 클릭 시 상세 페이지로 이동_SA
+            {!loading && boardList.length > 0 ? (
+              boardList.map((board) => (
+                <TableRow
+                  hover
+                  key={board.bno}
+                  onClick={() => console.log(`게시글 클릭: ${board.bno}`)} // 클릭 시 동작
+                >
+                  {/* 게시글 번호 */}
+                  <TableCell align="center">{board.bno}</TableCell>
 
-                  >
-                    {/* 질문 번호 */}
-                    <TableCell align="center">{question.qno}</TableCell>
+                  {/* 게시글 제목 */}
+                  <TableCell align="left" style={{ width: '450px' }}>
+                    <Typography variant="body1" fontWeight="bold" noWrap>
+                      {board.title}
+                    </Typography>
+                  </TableCell>
 
-                    {/* 질문 제목 */}
-                    <TableCell align="left" style={{ width: '450px' }}>
-                      <Typography variant="body1" fontWeight="bold" noWrap>
-                        {question.title}
-                      </Typography>
-                    </TableCell>
+                  {/* 작성자 */}
+                  <TableCell align="center">{board.writer}</TableCell> {/* 수정된 부분 */}
 
-                    {/* 작성자 */}
-                    <TableCell align="center">
-                      {question.writer}
-                    </TableCell>
+                  {/* 작성일 */}
+                  <TableCell align="center">
+                    {new Date(board.createdDate).toLocaleDateString()}
+                  </TableCell>
 
-                    {/* 작성일 */}
-                    <TableCell align="center">
-                      {new Date(question.createdDate).toLocaleDateString()}
-                    </TableCell>
-
-                    {/* 조회수 */}
-                    <TableCell align="center">
-                      {question.viewCount}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            ):(
+                  {/* 조회수 */}
+                  <TableCell align="center">{board.viewCount}</TableCell>
+                </TableRow>
+              ))
+            ) : (
               <TableRow>
-                <TableCell colSpan={6} align="center">
-                  No questions available.
+                <TableCell colSpan={5} align="center">
+                  {loading ? '불러오는 중...' : '게시글이 없습니다.'}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </TableContainer>
-
     </Card>
   );
 }

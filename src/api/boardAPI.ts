@@ -2,7 +2,7 @@ import { IBoard } from '../types/board';
 import axios from 'axios';
 
 
-const host = 'http://10.10.10.11:8080/api/boa';
+const host = 'http://localhost:8080/api/boa';
 
 interface BoardResponse {
   dtoList: IBoard[];
